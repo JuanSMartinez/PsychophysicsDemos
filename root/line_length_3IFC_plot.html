@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+    <head>
+        <meta charset="utf-8">
+        <!--D3-->
+        <script src="https://d3js.org/d3.v6.min.js"></script>
+        <title></title>
+    </head>
+    <body>
+        <div id="plot"></div>
+        <script type="text/javascript">
+            var data = JSON.parse(localStorage.getItem("data"));
+            if(localStorage.getItem("data"))
+            {
+                var reference_length = 100;
+                localStorage.removeItem("data");
+
+                var min_delta = Math.abs(data[0].length-reference_length);
+                var max_delta = Math.abs(data[0].length-reference_length);
+
+                for (var i = 0; i < data.length; i++)
+                {
+                    var delta = Math.abs(data[i].length-reference_length);
+                    if(delta <= min_delta )
+                        min_delta = delta;
+                    if (delta >= max_delta)
+                        max_delta = delta;
+                }
+
+
+                var margin = {top: 30, right: 30, bottom: 50, left: 60},
+                      width = 500 - margin.left - margin.right,
+                      height = 500 - margin.top - margin.bottom;
+                var svg = d3.select("#plot")
+                              .append("svg")
+                              .attr("width", width + margin.left + margin.right)
+                              .attr("height", height + margin.top + margin.bottom)
+                              .append("g")
+                              .attr("transform", "translate("+margin.left+ ","+ margin.right +")");
+                var x = d3.scaleLinear()
+                          .domain([-0.1, data.length+1])
+                          .range([0, width]);
+                svg.append("g")
+                  .attr("transform", "translate(0," + height + ")")
+                  .call(d3.axisBottom(x));
+
+                  // Add Y axis
+                  var y = d3.scaleLinear()
+                    .domain([min_delta-10, max_delta+10])
+                    .range([ height, 0]);
+                  svg.append("g")
+                    .call(d3.axisLeft(y));
+
+                  // Add dots
+                  var dot = svg.append("g")
+                               .selectAll("#dot")
+                               .data(data);
+                  var dot_enter = dot.enter()
+                                    .append("g")
+                                    .attr("transform", function(d){return "translate("+x(d.trial)+","+y(Math.abs(d.length-reference_length))+")"});
+
+                 dot_enter.append("text").text(function(d){return d.response;})
+                            .attr("alignment-baseline", "middle");
+
+                // Axis labels
+                svg.append("text")
+                    .attr("class", "x label")
+                    .attr("text-anchor", "middle")
+                    .attr("alignment-baseline", "middle")
+                    .attr("x", width/2)
+                    .attr("y", height + 30)
+                    .text("Trial");
+
+                svg.append("text")
+                    .attr("class", "y label")
+                    .attr("text-anchor", "end")
+                    .attr("y", -45)
+                    .attr("dy", ".75em")
+                    .attr("transform", "rotate(-90)")
+                    .text("|Delta Length|");
+
+            }
+
+        </script>
+    </body>
+</html>
