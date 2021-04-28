@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!--jpsych-psychophysics-->
+    <script src="js/jspsych.js"></script>
+    <script src="js/jspsych-html-button-response.js"></script>
+    <script src="js/jspsych-html-keyboard-response.js"></script>
+    <script src="js/jspsych-canvas-button-response.js"></script>
+    <script src="js/jspsych-call-function.js"></script>
+
+    <!--Random module -->
+    <script src="js/random.js"></script>
+
+    <!-- jsPsych CSS -->
+    <link rel="stylesheet" href="css/jspsych.css">
+
+    <!--D3-->
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+
+    <title>Line-Length Discrimination (3IFC)</title>
+  </head>
+  <body>
+      <script type="text/javascript">
+          // Experiment parameters (from what I can understand from the original Java code)
+          var big_step_db = 4; // re. current target length
+          var small_step_db = 1; // re. current target length
+          var target_line_length = 250; // in px
+          var target_line_length_db = 0;
+          var reference_line_length = 100; // in px
+          var total_reversals = 15;
+          var direction = -1; // -1 for decreasing, 1 for increasing
+          var duration_of_lines_ms = 500;
+          // The experiment appears to follow a 1 up, 3 down rule and estimates the
+          // threshold as the average of the last 6 midpoint averages (the last 6 peak-valley averages).
+          // The step size changes from big to small after two reversals
+
+          // Global variables for functions and to store data
+          var canvas_w = 500;
+          var canvas_h = 500;
+
+          // offsets and lengths of lines for each trial
+          var interval_offsets = [0,0,0,0,0,0];
+          var lengths = [0,0,0];
+
+          // Responses as sequences of strings
+          var responses = [];
+
+          // Correct response number for a trial
+          var correct_response = -1;
+
+          // Reversal values
+          var reversals = [];
+
+          // Target lengths per completed trial
+          var trial_target_lengths = [];
+          var trial_target_lengths_db = [];
+
+          // Variable to continue or end the experiment
+          var continue_exp = true;
+
+          var correct_response_tracker = 0;
+
+          // Helper functions
+          function update_tracking_variables()
+          {
+              // Update direction and reversals from previous results
+              if (responses.length > 0)
+              {
+                  // If the last response was incorrect, increase the line length
+                  if (responses[responses.length-1] == '-')
+                  {
+
+                      // If we were decreasing, this was a reversal
+                      if (direction == -1)
+                      {
+                           direction = 1;
+                           reversals.push(target_line_length);
+                      }
+                      var step = reversals.length >= 2 ? small_step_db : big_step_db;
+                      var new_length = target_line_length*Math.pow(10,step/20);
+                      target_line_length = Math.min(new_length, canvas_h);
+                      target_line_length_db = target_line_length_db + step;
+                  }
+                  else
+                  {
+                      // There was a correct response, but the line length
+                      // decreases only after 3 consecutive correct responses
+                      if(correct_response_tracker == 3)
+                          {
+                              correct_response_tracker = 0;
+                              // If we were increasing, this was a reversal
+                              if (direction == 1)
+                              {
+                                  direction = -1;
+                                  reversals.push(target_line_length);
+                              }
+                              var step = reversals.length >= 2 ? small_step_db : big_step_db;
+                              var new_length = target_line_length*Math.pow(10,-step/20);
+                              target_line_length = Math.max(0, new_length);
+                              target_line_length_db = target_line_length_db - step;
+                          }
+                  }
+              }
+
+          }
+          function set_next_interval_settings()
+          {
+
+
+              // Set the offsets to display lines
+              next_target_interval = getRandomInt(2);
+              correct_response = next_target_interval;
+              var i,j;
+              for(i=0, j=0; i < 3; i ++, j +=2)
+              {
+                  lengths[i] = next_target_interval == i ? target_line_length : reference_line_length;
+                  var offset_x = getRandomIntInclusive(-25, 25);
+                  var offset_y = getRandomIntInclusive(-25, 25);
+                  var extent = canvas_h/2 + offset_y + lengths[i];
+                  while (offset_x == 0 || extent > canvas_h)
+                  {
+
+                      offset_x = getRandomIntInclusive(-25, 25);
+                      offset_y = offset_y - 10;
+                      extent = canvas_h/2 + offset_y + lengths[i];
+                  }
+                  interval_offsets[j] = offset_x;
+                  interval_offsets[j+1] = offset_y;
+              }
+
+          }
+
+          function draw_interval_line(canvas, interval_num)
+          {
+              var offset_x = interval_offsets[interval_num];
+              var offset_y = interval_offsets[interval_num+1];
+              var ctx = canvas.getContext("2d");
+              ctx.beginPath();
+              ctx.moveTo(canvas_w/2 + offset_x, canvas_h/2 + offset_y);
+              ctx.lineTo(canvas_w/2 + offset_x, canvas_h/2 + offset_y + lengths[interval_num]);
+              ctx.strokeStyle = "rgb(0,0,0)";
+              ctx.stroke();
+
+          }
+
+          function plot_results()
+          {
+
+              var data = [];
+              for (var i = 0; i < trial_target_lengths_db.length; i++)
+              {
+                  data.push({
+                      'trial': i,
+                      'length': trial_target_lengths[i],
+                      'db': trial_target_lengths_db[i],
+                      'response': responses[i]
+                  });
+              }
+              localStorage.setItem("data", JSON.stringify(data));
+              window.open("line_length_3IFC_plot.html", "_self");
+
+
+          }
+          var instructions_txt = ""
+          +"<h1>Line-Length Discrimination</h1>"
+          +"<p>A sequence of trials will be presented. On every trial, a sequence"
+            + "of three lines will appear on the screen. Please select which line"
+            +" you think is the longest</p><p>Press 'Begin' to start</p>";
+
+          var instructions = {
+              type: 'html-button-response',
+              stimulus: instructions_txt,
+              choices: ['Begin']
+          };
+
+          var update = {
+              type: "call-function",
+              func: set_next_interval_settings
+          };
+
+          var trial = {
+              timeline: [
+                  {
+                      type: 'canvas-button-response',
+                      canvas_size: [canvas_h, canvas_w],
+                      stimulus: jsPsych.timelineVariable('line'),
+                      choices: jsPsych.timelineVariable('choices'),
+                      stimulus_duration: duration_of_lines_ms,
+                      trial_duration: jsPsych.timelineVariable('trial_dur')
+                  }
+              ],
+              timeline_variables: [
+                  {line: function(c){draw_interval_line(c,0);}, choices: [], trial_dur: duration_of_lines_ms},
+                  {line: function(c){draw_interval_line(c,1);}, choices: [],  trial_dur: duration_of_lines_ms},
+                  {line: function(c){draw_interval_line(c,2);}, choices: ['First Line','Second Line','Third Line'], trial_dur: null},
+              ],
+              on_timeline_finish: function(){
+                  last_trial = JSON.parse(jsPsych.data.get().last(1).json())[0];
+                  last_response = last_trial.response;
+                  trial_target_lengths.push(target_line_length);
+                  trial_target_lengths_db.push(target_line_length_db);
+                  if (last_response == correct_response)
+                  {
+                      responses.push("+");
+                      correct_response_tracker += 1;
+                  }
+                  else
+                  {
+                      responses.push("-");
+                      correct_response_tracker = 0;
+                  }
+                  update_tracking_variables();
+                  if (reversals.length >= total_reversals)
+                  {
+                      continue_exp = false;
+                  }
+
+              }
+          };
+
+          var full_trial = {
+              timeline: [update, trial],
+              loop_function: function(data){return continue_exp;}
+          };
+
+          // Start the experiment
+          jsPsych.init({
+                timeline: [instructions, full_trial],
+                 on_finish: function(data){
+                     plot_results();
+                 }
+            });
+
+      </script>
+  </body>
+</html>
