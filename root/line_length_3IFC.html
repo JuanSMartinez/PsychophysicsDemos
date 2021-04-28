@@ -109,10 +109,8 @@
           }
           function set_next_interval_settings()
           {
-
-
               // Set the offsets to display lines
-              next_target_interval = getRandomInt(2);
+              next_target_interval = getRandomIntInclusive(0, 2);
               correct_response = next_target_interval;
               var i,j;
               for(i=0, j=0; i < 3; i ++, j +=2)
@@ -155,6 +153,7 @@
               {
                   data.push({
                       'trial': i,
+                      'reversal': reversals[i],
                       'length': trial_target_lengths[i],
                       'db': trial_target_lengths_db[i],
                       'response': responses[i]
@@ -167,9 +166,10 @@
           }
           var instructions_txt = ""
           +"<h1>Line-Length Discrimination</h1>"
-          +"<p>A sequence of trials will be presented. On every trial, a sequence"
-            + "of three lines will appear on the screen. Please select which line"
-            +" you think is the longest</p><p>Press 'Begin' to start</p>";
+          +"<p>A sequence of trials will be presented.</p><p>On every trial, a sequence"
+            + " of three lines will appear on the screen.</p><p>Please select the line"
+            +" that appears the longest.</p><p>If you are unsure, make your best guess.</p>"
+            +"<p>Press 'Begin' to start.</p>";
 
           var instructions = {
               type: 'html-button-response',
@@ -222,8 +222,15 @@
               }
           };
 
+          var delay = {
+              type: "html-keyboard-response",
+              stimulus: '',
+              choices: jsPsych.NO_KEYS,
+              trial_duration: 500
+          };
+
           var full_trial = {
-              timeline: [update, trial],
+              timeline: [update, delay, trial],
               loop_function: function(data){return continue_exp;}
           };
 

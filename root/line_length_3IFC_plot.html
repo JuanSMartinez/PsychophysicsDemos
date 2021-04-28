@@ -17,9 +17,11 @@
 
                 var min_delta = Math.abs(data[0].length-reference_length);
                 var max_delta = Math.abs(data[0].length-reference_length);
+                var reversals = [];
 
                 for (var i = 0; i < data.length; i++)
                 {
+                    reversals[i] = data[i].reversal;
                     var delta = Math.abs(data[i].length-reference_length);
                     if(delta <= min_delta )
                         min_delta = delta;
@@ -27,7 +29,24 @@
                         max_delta = delta;
                 }
 
+                // Threshold calculation
+                var mid_1 = (reversals[3] + reversals[4])/2;
+                var mid_2 = (reversals[5] + reversals[6])/2;
+                var mid_3 = (reversals[7] + reversals[8])/2;
+                var mid_4 = (reversals[9] + reversals[10])/2;
+                var mid_5 = (reversals[11] + reversals[12])/2;
+                var mid_6 = (reversals[13] + reversals[14])/2;
+                var thr = (mid_1+mid_2+mid_3+mid_4+mid_5+mid_6)/6;
 
+                var std = Math.sqrt((Math.pow(mid_1-thr,2)+
+                                    Math.pow(mid_2-thr,2)+
+                                    Math.pow(mid_3-thr,2)+
+                                    Math.pow(mid_4-thr,2)+
+                                    Math.pow(mid_5-thr,2)+
+                                    Math.pow(mid_6-thr,2)+)/5)
+
+
+                // Plot
                 var margin = {top: 30, right: 30, bottom: 50, left: 60},
                       width = 500 - margin.left - margin.right,
                       height = 500 - margin.top - margin.bottom;
