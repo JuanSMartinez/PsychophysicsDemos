@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+    <head>
+        <meta charset="utf-8">
+        <!--jpsych-psychophysics-->
+        <script src="../js/jspsych.js"></script>
+        <script src="../js/jspsych-html-button-response.js"></script>
+        <script src="../js/jspsych-html-keyboard-response.js"></script>
+        <script src="../js/jspsych-canvas-button-response.js"></script>
+        <script src="../js/jspsych-call-function.js"></script>
+
+        <!--Random module -->
+        <script src="../js/random.js"></script>
+
+        <!-- jsPsych CSS -->
+        <link rel="stylesheet" href="../css/jspsych.css">
+
+        <title>Grayscale Identification</title>
+    </head>
+    <body>
+        <script type="text/javascript">
+            // Define the colors as rgb arrays according to the original Java code
+            var shades = [];
+            var maxGray = 30;
+            var numStimuli = 5;
+            var replicates = 20;
+
+            var step = (255-maxGray) / numStimuli;
+    		for (var i=0; i<numStimuli; i++)
+            {
+                var rgb = maxGray + (i*step);
+                shades.push([rgb, rgb, rgb])
+            }
+
+            // Feedback option
+            var feedback = false;
+
+            // Feeback selection
+            var feedback_screen = {
+                type: "html-button-response",
+                stimulus: "<h1>Allow feedback for responses?</h1>",
+                choices: ['Feedback', 'No Feedback']
+            }
+
+            jsPsych.init({
+                timeline: [feedback_screen],
+                on_finish: function(){
+                    jsPsych.data.displayData('json');
+                }
+            });
+        </script>
+    </body>
+</html>
