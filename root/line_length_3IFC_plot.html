@@ -85,12 +85,12 @@
                             .attr("alignment-baseline", "middle");
 
                 // Thresold line
-                var points = [[x(0), y(thr)],[x(data[data.length-1].trial), y(thr)]];
-                var line_generator = d3.line().context(null);
-                var line_path = line_generator(points);
-                var line = svg.append("path")
-                                .attr("d", line_path)
-                                .attr("stroke", "red");
+                // var points = [[x(0), y(thr)],[x(data[data.length-1].trial), y(thr)]];
+                // var line_generator = d3.line().context(null);
+                // var line_path = line_generator(points);
+                // var line = svg.append("path")
+                //                 .attr("d", line_path)
+                //                 .attr("stroke", "red");
 
                 d3.select("#threshold").append("p").text("Threshold: " + Math.round(thr*100)/100 + " px");
                 d3.select("#threshold").append("p").text("SD of Threshold: " + Math.round(std_thr*100)/100 + " px");
