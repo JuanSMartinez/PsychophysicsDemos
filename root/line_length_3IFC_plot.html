@@ -8,6 +8,7 @@
     </head>
     <body>
         <div id="plot"></div>
+        <div id="threshold"></div>
         <script type="text/javascript">
             var data = JSON.parse(localStorage.getItem("data"));
             if(localStorage.getItem("data"))
@@ -17,11 +18,12 @@
 
                 var min_delta = Math.abs(data[0].length-reference_length);
                 var max_delta = Math.abs(data[0].length-reference_length);
-                var reversals = [];
+                var delta_reversals = [];
 
                 for (var i = 0; i < data.length; i++)
                 {
-                    reversals[i] = data[i].reversal;
+                    if (data[i].reversal != undefined)
+                        delta_reversals.push(Math.abs(data[i].reversal-reference_length));
                     var delta = Math.abs(data[i].length-reference_length);
                     if(delta <= min_delta )
                         min_delta = delta;
@@ -30,20 +32,21 @@
                 }
 
                 // Threshold calculation
-                var mid_1 = (reversals[3] + reversals[4])/2;
-                var mid_2 = (reversals[5] + reversals[6])/2;
-                var mid_3 = (reversals[7] + reversals[8])/2;
-                var mid_4 = (reversals[9] + reversals[10])/2;
-                var mid_5 = (reversals[11] + reversals[12])/2;
-                var mid_6 = (reversals[13] + reversals[14])/2;
+                var mid_1 = (delta_reversals[3] + delta_reversals[4])/2;
+                var mid_2 = (delta_reversals[5] + delta_reversals[6])/2;
+                var mid_3 = (delta_reversals[7] + delta_reversals[8])/2;
+                var mid_4 = (delta_reversals[9] + delta_reversals[10])/2;
+                var mid_5 = (delta_reversals[11] + delta_reversals[12])/2;
+                var mid_6 = (delta_reversals[13] + delta_reversals[14])/2;
+
                 var thr = (mid_1+mid_2+mid_3+mid_4+mid_5+mid_6)/6;
 
-                var std = Math.sqrt((Math.pow(mid_1-thr,2)+
+                var std_thr = Math.sqrt((Math.pow(mid_1-thr,2)+
                                     Math.pow(mid_2-thr,2)+
                                     Math.pow(mid_3-thr,2)+
                                     Math.pow(mid_4-thr,2)+
                                     Math.pow(mid_5-thr,2)+
-                                    Math.pow(mid_6-thr,2)+)/5)
+                                    Math.pow(mid_6-thr,2))/5)
 
 
                 // Plot
@@ -81,6 +84,17 @@
                  dot_enter.append("text").text(function(d){return d.response;})
                             .attr("alignment-baseline", "middle");
 
+                // Thresold line
+                var points = [[x(0), y(thr)],[x(data[data.length-1].trial), y(thr)]];
+                var line_generator = d3.line().context(null);
+                var line_path = line_generator(points);
+                var line = svg.append("path")
+                                .attr("d", line_path)
+                                .attr("stroke", "red");
+
+                d3.select("#threshold").append("p").text("Threshold: " + Math.round(thr*100)/100 + " px");
+                d3.select("#threshold").append("p").text("SD of Threshold: " + Math.round(std_thr*100)/100 + " px");
+
                 // Axis labels
                 svg.append("text")
                     .attr("class", "x label")
@@ -88,7 +102,7 @@
                     .attr("alignment-baseline", "middle")
                     .attr("x", width/2)
                     .attr("y", height + 30)
-                    .text("Trial");
+                    .text("Trial Number");
 
                 svg.append("text")
                     .attr("class", "y label")
@@ -96,7 +110,7 @@
                     .attr("y", -45)
                     .attr("dy", ".75em")
                     .attr("transform", "rotate(-90)")
-                    .text("|Delta Length|");
+                    .text("|Delta Length| (px)");
 
             }
 
