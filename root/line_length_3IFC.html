@@ -63,6 +63,7 @@
           var continue_exp = true;
 
           var correct_response_tracker = 0;
+          var feedback = "Correct";
 
           // Helper functions
           function update_tracking_variables()
@@ -207,11 +208,13 @@
                   {
                       responses.push("+");
                       correct_response_tracker += 1;
+                      feedback = "Correct";
                   }
                   else
                   {
                       responses.push("-");
                       correct_response_tracker = 0;
+                      feedback = "Wrong";
                   }
                   update_tracking_variables();
                   if (reversals.length >= total_reversals)
@@ -229,8 +232,15 @@
               trial_duration: 500
           };
 
+          var feedback_screen = {
+              type: "html-keyboard-response",
+              stimulus: function(){return '<h1>' + feedback + '</h1>';},
+              choices: jsPsych.NO_KEYS,
+              trial_duration: 500
+          };
+
           var full_trial = {
-              timeline: [update, delay, trial],
+              timeline: [update, delay, trial, feedback_screen],
               loop_function: function(data){return continue_exp;}
           };
 
