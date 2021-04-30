@@ -19,33 +19,159 @@
     </head>
     <body>
         <script type="text/javascript">
+
+            // Canvas size
+            var canvas_h = 500;
+            var canvas_w = 500;
+
             // Define the colors as rgb arrays according to the original Java code
             var shades = [];
             var maxGray = 30;
             var numStimuli = 5;
-            var replicates = 20;
+            var replicates = 1;
 
+            // Other experiment settings
+            var shade_duration = 1000;
+            var delay = 500;
+
+            // Padding parameters for screen with all shades
+            var pad_x = 10;
+            var gap_x = 20;
+            var txt_font = 30;
+            var circle_r = (canvas_w - 2*pad_x - (numStimuli-1)*gap_x)/(2*numStimuli);
+
+            // Create shades
+            var i;
             var step = (255-maxGray) / numStimuli;
-    		for (var i=0; i<numStimuli; i++)
+    		for (i=0; i<numStimuli; i++)
             {
                 var rgb = maxGray + (i*step);
-                shades.push([rgb, rgb, rgb])
+                shades.push([rgb, rgb, rgb]);
             }
 
-            // Feedback option
-            var feedback = false;
+            // Create an empty confusion matrix
+            var confusion_matrix = [];
+            var row;
+            var j;
+            for(i=0; i < numStimuli; i ++)
+            {
+                row = [];
+                for(j = 0; j < numStimuli; j++)
+                    row.push(0);
+                confusion_matrix.push(row);
+            }
+
+            // Feedback text
+            var feedback_txt = '';
+
+            // Function to draw all the shades
+            function drawAllShades(canvas)
+            {
+                var ctx = canvas.getContext('2d');
+                for(var i=0; i < numStimuli; i++)
+                {
+                    var shade = shades[i];
+                    var x = pad_x + (2*i+1)*circle_r + i*gap_x
+                    ctx.beginPath();
+                    ctx.arc(x, canvas_h/2, circle_r ,0, 2*Math.PI);
+                    ctx.fillStyle = "rgb(" + shade[0] + "," + shade[1] + "," + shade[2] + ")";
+                    ctx.fill();
+
+                    ctx.font = txt_font + 'px serif';
+                    ctx.fillStyle = "black";
+                    ctx.textAlign = "center";
+                    ctx.fillText(''+(i+1), x, canvas_h/2+circle_r+gap_x+txt_font/2);
+                }
+            }
+
+            // Function to draw a shade from on an index
+            function drawShade(canvas, index)
+            {
+                var ctx = canvas.getContext('2d');
+                var shade = shades[index];
+                ctx.beginPath();
+                ctx.arc(canvas_w/2, canvas_h/2, circle_r ,0, 2*Math.PI);
+                ctx.fillStyle = "rgb(" + shade[0] + "," + shade[1] + "," + shade[2] + ")";
+                ctx.fill();
+            }
 
             // Feeback selection
             var feedback_screen = {
                 type: "html-button-response",
                 stimulus: "<h1>Allow feedback for responses?</h1>",
-                choices: ['Feedback', 'No Feedback']
+                choices: ['Feedback', 'No Feedback'],
+                on_finish: function(data){
+                    if(data.response == 0)
+                        jsPsych.data.addProperties({feedback: true});
+                    else
+                        jsPsych.data.addProperties({feedback: false});
+                }
+            }
+
+            // Color to number association
+            var color_screen = {
+                type: 'canvas-button-response',
+                canvas_size: [canvas_h, canvas_w],
+                stimulus: function(c){drawAllShades(c);},
+                choices : ['Click Here When Ready To Start']
+            }
+
+            // Single trial
+            var trial = {
+                timeline: [
+                    {
+                        type: "html-keyboard-response",
+                        stimulus: '',
+                        choices: jsPsych.NO_KEYS,
+                        trial_duration: delay
+                    },
+                    {
+                        type: 'canvas-button-response',
+                        canvas_size: [canvas_h, canvas_w],
+                        choices: ['1', '2', '3', '4', '5'],
+                        stimulus: jsPsych.timelineVariable('shade'),
+                        stimulus_duration: shade_duration,
+                        data: jsPsych.timelineVariable('trial_data')
+                    },
+                    {
+                        type: 'html-button-response',
+                        stimulus: function(){return feedback_txt;},
+                        choices: ['Next']
+                    }
+                ],
+                timeline_variables: [
+                    {shade: function(c){ drawShade(c,0);}, trial_data: {'stimulus': 0}},
+                    {shade: function(c){ drawShade(c,1);}, trial_data: {'stimulus': 1}},
+                    {shade: function(c){ drawShade(c,2);}, trial_data: {'stimulus': 2}},
+                    {shade: function(c){ drawShade(c,3);}, trial_data: {'stimulus': 3}},
+                    {shade: function(c){ drawShade(c,4);}, trial_data: {'stimulus': 4}},
+                ],
+                sample: {
+                     type: 'fixed-repetitions',
+                     size: replicates
+                },
+                on_finish: function(data){
+                    if (data.trial_type == 'canvas-button-response')
+                    {
+                        var row = confusion_matrix[data.stimulus];
+                        row[data.response] += 1;
+                        if(data.feedback)
+                        {
+                            if (data.stimulus == data.response)
+                                feedback_txt = '<h1>Correct</h1>';
+                            else
+                                feedback_txt = '<h1>Incorrect</h1><p>The answer was '+(data.stimulus+1)+'</p>';
+                        }
+
+                    }
+                }
             }
 
             jsPsych.init({
-                timeline: [feedback_screen],
+                timeline: [feedback_screen, color_screen, trial],
                 on_finish: function(){
-                    jsPsych.data.displayData('json');
+                    localStorage.setItem("confusion_matrix", JSON.stringify(confusion_matrix));
+                    window.open("grayscale_plot.html", "_self");
                 }
             });
         </script>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+    <head>
+        <meta charset="utf-8">
+        <!--D3-->
+        <script src="https://d3js.org/d3.v6.min.js"></script>
+        <title>Grayscale Identification Results</title>
+    </head>
+    <body>
+        <script type="text/javascript">
+            var matrix = JSON.parse(localStorage.getItem("confusion_matrix"));
+            if(matrix)
+            {
+                // Compute all information transfer estimates and percent correct score
+                var n=0;
+                var n_i = 0;
+                var n_j = 0;
+                var IT_est = 0;
+                var pc = 0;
+                var row;
+                for(var i=0; i < matrix.length; i ++)
+                {
+                    row = matrix[i];
+                    for(var j=0; j < matrix.length; j ++)
+                    {
+                        var n_i_j = row[j];
+                        n += n_i_j;
+                        if (i == j)
+                            pc += n_i_j;
+                        
+                    }
+                }
+                pc = 100*pc/n;
+            }
+        </script>
+    </body>
+</html>
