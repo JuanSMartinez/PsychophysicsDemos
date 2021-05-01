@@ -42,8 +42,13 @@
             '{"trial":51,"length":99.52679263837429,"db":-8,"response":"+"},{"trial":52,"length":99.52679263837429,"db":-8,"response":"+"},'+
             '{"trial":53,"length":99.52679263837429,"db":-8,"response":"-"}]';
 
+            var conf_matrix = [[1,2,3,4,5],[6,7,8,9,10],[11,12,13,14,15],[16,17,18,19,20],[21,22,23,24,25]];
+
             localStorage.setItem("data", txt_data);
             window.open("line_length_3IFC_plot.html", "_self");
+
+            // localStorage.setItem("confusion_matrix", JSON.stringify(conf_matrix));
+            // window.open("grayscale_plot.html", "_self");
         </script>
     </body>
 </html>

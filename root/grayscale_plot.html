@@ -7,6 +7,10 @@
         <title>Grayscale Identification Results</title>
     </head>
     <body>
+        <h1 style="text-align:center">Confusion Matrix</h1>
+        <table id="confusion_matrix"></table>
+        <h3 style="text-align:center" id="pc_score"></h3>
+        <h3 style="text-align:center" id="it"></h3>
         <script type="text/javascript">
             var matrix = JSON.parse(localStorage.getItem("confusion_matrix"));
             if(matrix)
@@ -18,19 +22,104 @@
                 var IT_est = 0;
                 var pc = 0;
                 var row;
-                for(var i=0; i < matrix.length; i ++)
+                var n_i = [];
+                var n_j = [];
+                var i;
+                var j;
+
+                for(i=0; i < matrix.length; i ++)
+                {
+                    n_i.push(0);
+                    n_j.push(0);
+                }
+
+                for(i=0; i < matrix.length; i ++)
                 {
                     row = matrix[i];
-                    for(var j=0; j < matrix.length; j ++)
+                    row_sum = 0;
+                    for(j=0; j < matrix.length; j ++)
                     {
-                        var n_i_j = row[j];
-                        n += n_i_j;
+                        row_sum += row[j];
+                        n_j[j] += row[j];
+                        n += row[j];
+                    }
+                    n_i[i] = row_sum;
+                }
+
+                for(i=0; i < matrix.length; i ++)
+                {
+                    row = matrix[i];
+                    for(j=0; j < matrix.length; j ++)
+                    {
+                        var n_ij = row[j];
+
                         if (i == j)
-                            pc += n_i_j;
-                        
+                            pc += n_ij;
+
+                        if (n_i[i]*n_j[j] > 0 && n_ij > 0)
+                        {
+                            IT_est += ((n_ij/n)*Math.log2((n_ij*n)/(n_i[i]*n_j[j])));
+                        }
+
                     }
                 }
                 pc = 100*pc/n;
+
+                // Build a table to show the matrix
+                var columns = ['', 'R = "1"', 'R = "2"', 'R = "3"', 'R = "4"', 'R = "5"'];
+
+                var table = d3.select("#confusion_matrix").attr("style", "border-collapse: collapse; width: 500px; margin-left: auto; margin-right: auto");
+                var thead = table.append("thead");
+                var tbody = table.append("tbody");
+
+                var extended_matrix = [];
+                for(i=0; i < matrix.length; i++)
+                {
+                    new_row = [];
+                    new_row.push("Stimulus " + (i+1));
+                    row = matrix[i];
+                    for(j = 0; j < matrix.length; j++)
+                    {
+                        new_row.push(row[j]);
+                    }
+                    extended_matrix.push(new_row);
+                }
+
+                thead.append("tr")
+                    .selectAll("th")
+                    .data(columns)
+                    .enter()
+                    .append("th")
+                    .attr("style",  "text-align: center; border: 1px solid black;")
+                    .text(function(name){return name;});
+
+                var rows = tbody.selectAll("tr")
+                                .data(extended_matrix)
+                                .enter()
+                                .append("tr");
+
+                var cells = rows.selectAll("td")
+                                .data(function(row, i){
+                                    return row;
+                                })
+                                .enter()
+                                .append("td")
+                                .attr("style", "text-align: center; border: 1px solid black;")
+                                .text(function(d,i){
+                                    if (typeof(d) == 'string' || d > 0)
+                                        return d;
+                                    else
+                                        return '';
+                                });
+                // Add metrics
+                d3.select("#pc_score").text("Percent Correct = " + Math.round(pc*100)/100 + "%");
+                var IS = 2.31 // All stimuli are equally likely because they are presented an equal number of times
+                var IR = 0;
+                for(j =0; j < matrix.length; j++)
+                {
+                    IR = IR - (n_j[j]/n)*Math.log2(n_j[j]/n);
+                }
+                d3.select("#it").text("IS = " + IS + " bits, IT estimated = " + Math.round(IT_est*100)/100 + " bits, IR = " + Math.round(IR*100)/100 + " bits");
             }
         </script>
     </body>
