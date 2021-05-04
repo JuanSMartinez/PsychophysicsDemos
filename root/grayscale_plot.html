@@ -113,13 +113,15 @@
                                 });
                 // Add metrics
                 d3.select("#pc_score").text("Percent Correct = " + Math.round(pc*100)/100 + "%");
-                var IS = 2.31 // All stimuli are equally likely because they are presented an equal number of times
+                var IS = 0;
                 var IR = 0;
                 for(j =0; j < matrix.length; j++)
                 {
                     IR = IR - (n_j[j]/n)*Math.log2(n_j[j]/n);
+                    IS = IS - (n_i[j]/n)*Math.log2(n_i[j]/n);
                 }
-                d3.select("#it").text("IS = " + IS + " bits, IT estimated = " + Math.round(IT_est*100)/100 + " bits, IR = " + Math.round(IR*100)/100 + " bits");
+                var IT_corrected = IT_est - (matrix.length-1)*(matrix.length-1)/(n*1.3863);
+                d3.select("#it").text("IS = " + Math.round(IS*100)/100 + " bits, IT estimated = " + Math.round(IT_est*100)/100 + " bits, IT corrected = " + Math.round(IT_corrected*100)/100 + " bits, IR = " + Math.round(IR*100)/100 + " bits");
             }
         </script>
     </body>
